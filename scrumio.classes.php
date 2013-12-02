@@ -438,10 +438,8 @@ class Burndown {
   }
 
   public function add_time_change($date, $value) {
-    var_dump($date);
     // check if the date is within the range
     if($this->start_date > $date || $this->end_date < $date) {
-      echo 'wrong date';
       return false;
     }
     // work done on day 1 affects time left on day 2, and so on
@@ -455,8 +453,6 @@ class Burndown {
       $date->sub(new DateInterval('P1D'));
     }
     $date->setTime(0, 0);
-    echo $date->format(DateTime::ISO8601);
-    echo "\n".$date->getTimestamp();
     $this->time_changes[$date->getTimestamp()] += $value;
   }
 
