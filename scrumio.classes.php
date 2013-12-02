@@ -279,6 +279,7 @@ class ScrumioSprint {
           $this->stories[] = new ScrumioStory($story, $items, $estimate, $time_left, $this->states, $this->get_working_days(), $this->get_working_days_left());
         }
       }
+      $this->changes->set_estimate($this->get_estimate());
     }
     catch (PodioError $e) {
       die("There was an error. The API responded with the error type <b>{$e->body['error']}</b> and the message <b>{$e->body['error_description']}</b>. The URL was <b>{$e->url}</b><br><a href='".url_for('logout')."'>Log out</a>");
@@ -421,6 +422,7 @@ class Burndown {
   public $start_date;
   public $end_date;
   public $duration;
+  public $estimate;
   public $time_changes = array(); // we index by date timestamp (at midnight)
 
   public function __construct($start, $end) {
@@ -432,6 +434,10 @@ class Burndown {
     for($i = 0; $i < $this->duration; $i++) {
       $this->time_changes[$i] = 0;
     }
+  }
+
+  public function set_estimate($estimate) {
+    $this->estimate = $estimate;
   }
 
   public function add_time_change($date, $value) {
@@ -454,8 +460,19 @@ class Burndown {
     $this->time_changes[$difference->d] += ($value / 3600);
   }
 
-  public function get_value($date) {
-    return $this->time_changes[$date];
+  public function get_google_chart($labels) {
+    // example of the data chart here: https://google-developers.appspot.com/chart/interactive/docs/gallery/linechart
+    $data = array();
+    // $labels = array('Day', 'Expected', 'Current');
+    $data[] = $labels;
+    $data[] = array('Start', $this->estimate, $this->estimate);
+    $done = 0;
+    for($x = 1; $x <= $this->duration; $x++) {
+      $done += $this->time_changes[$x-1];
+      $data[] = array('Day '. $x, $this->estimate - ($this->estimate/$this->duration) * $x, $this->estimate - $done);
+    }
+
+    return $data;
   }
 
   public function dump() {
