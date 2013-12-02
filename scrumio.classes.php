@@ -429,11 +429,8 @@ class Burndown {
     $this->end_date = $end;
     $this->duration = date_diff($this->end_date, $this->start_date, 1)->d + 1;
     // initialise the array values for all days
-    $start = clone $this->start_date;
     for($i = 0; $i < $this->duration; $i++) {
-      $index = date_add($start, new DateInterval('P'.$i.'D'));
-      $this->time_changes[$index->getTimestamp()] = 0;
-      $start = clone $this->start_date;
+      $this->time_changes[$i] = 0;
     }
   }
 
@@ -453,7 +450,8 @@ class Burndown {
       $date->sub(new DateInterval('P1D'));
     }
     $date->setTime(0, 0);
-    $this->time_changes[$date->getTimestamp()] += $value;
+    $difference = date_diff($date, $this->start_date, 1);
+    $this->time_changes[$difference->d] += ($value / 3600);
   }
 
   public function get_value($date) {
