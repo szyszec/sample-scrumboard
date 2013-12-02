@@ -431,7 +431,7 @@ class Burndown {
     $this->start_date = $start;
     $this->end_date = $end;
     $this->duration = date_diff($this->end_date, $this->start_date, 1)->d + 1;
-    $this->today = date_diff(new DateTime(), $this->start_date, 1)->d + 1;
+    $this->today = date_diff(new DateTime(), $this->start_date, 1)->d;
     // initialise the array values for all days
     for($i = 0; $i < $this->duration; $i++) {
       $this->time_changes[$i] = 0;
