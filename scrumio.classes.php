@@ -422,6 +422,7 @@ class Burndown {
   public $start_date;
   public $end_date;
   public $duration;
+  public $today;
   public $estimate;
   public $time_changes = array(); // we index by date timestamp (at midnight)
 
@@ -430,6 +431,7 @@ class Burndown {
     $this->start_date = $start;
     $this->end_date = $end;
     $this->duration = date_diff($this->end_date, $this->start_date, 1)->d + 1;
+    $this->today = date_diff(new DateTime(), $this->start_date, 1)->d + 1;
     // initialise the array values for all days
     for($i = 0; $i < $this->duration; $i++) {
       $this->time_changes[$i] = 0;
@@ -461,15 +463,21 @@ class Burndown {
   }
 
   public function get_google_chart($labels) {
-    // example of the data chart here: https://google-developers.appspot.com/chart/interactive/docs/gallery/linechart
+    // example of the format: https://google-developers.appspot.com/chart/interactive/docs/gallery/linechart
     $data = array();
     // $labels = array('Day', 'Expected', 'Current');
     $data[] = $labels;
-    $data[] = array('Start', $this->estimate, $this->estimate);
+    $data[] = array('Day 1', $this->estimate, $this->estimate);
     $done = 0;
     for($x = 1; $x <= $this->duration; $x++) {
       $done += $this->time_changes[$x-1];
-      $data[] = array('Day '. $x, $this->estimate - ($this->estimate/$this->duration) * $x, $this->estimate - $done);
+      if($x === $this->today) {
+        $data[] = array('Today', $this->estimate - ($this->estimate/$this->duration) * $x, $this->estimate - $done);
+      } else if($x > $this->today) {
+        $data[] = array('Day '. ($x + 1), $this->estimate - ($this->estimate/$this->duration) * $x, null);
+      } else {
+        $data[] = array('Day '. ($x + 1), $this->estimate - ($this->estimate/$this->duration) * $x, $this->estimate - $done);
+      }
     }
 
     return $data;
