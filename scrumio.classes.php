@@ -187,6 +187,7 @@ class ScrumioSprint {
   public $total_days;
   public $remaining_days;
   public $stories;
+  public $changes;
 
   public function __construct($sprint) {
     global $api;
@@ -215,6 +216,8 @@ class ScrumioSprint {
         }
       }
 
+      $this->changes = new Burndown($this->start_date, $this->end_date);
+
       // Get all stories in this sprint
       $sort_by = defined('STORY_IMPORTANCE_ID') && STORY_IMPORTANCE_ID ? STORY_IMPORTANCE_ID : 'title';
       $sort_desc = defined('STORY_IMPORTANCE_ID') && STORY_IMPORTANCE_ID ? 1 : 0;
@@ -242,10 +245,29 @@ class ScrumioSprint {
         ITEM_STORY_ID => join(';', $stories_ids),
       ));
       foreach ($raw['items'] as $item) {
-        $item = new ScrumioItem($item);
-        $stories_items[$item->story_id][] = $item;
-        $stories_estimates[$item->story_id] = $stories_estimates[$item->story_id] + $item->estimate;
-        $stories_time_left[$item->story_id] = $stories_time_left[$item->story_id] + $item->time_left;
+        $local_item = new ScrumioItem($item);
+        $stories_items[$local_item->story_id][] = $local_item;
+        $stories_estimates[$local_item->story_id] = $stories_estimates[$local_item->story_id] + $local_item->estimate;
+        $stories_time_left[$local_item->story_id] = $stories_time_left[$local_item->story_id] + $local_item->time_left;
+
+        // get all the revisions for an item
+        $revisions = $api->item->getRevisions($item["item_id"]);
+
+        // we need to know the number of changes
+        $number_changes = count($revisions);
+        // the first one is always the creation - we don't need it
+        for($i = 1; $i < $number_changes; $i++) {
+          // get the changes and check if the TIME LEFT field has changed
+          $revision = $api->item->getRevisionDiff($item["item_id"] , ($i - 1), $i);
+          $revision = $revision[0];
+          if($revision["field_id"] == ITEM_TIMELEFT_ID) {
+            // get the date and associate the change
+            // we need a burn down chart for a sprint.
+            // we don't care about anything else at this point
+            // here we get all the changes for each task
+            $this->changes->add_time_change(new DateTime($revisions[$i]["created_on"], new DateTimeZone('Europe/London')), ($revision["from"][0]["value"] - $revision["to"][0]["value"]));
+          }
+        }
       }
 
       foreach ($stories['items'] as $story) {
@@ -344,6 +366,10 @@ class ScrumioSprint {
     return $this->get_finished()-$this->get_on_target_value();
   }
 
+  public function get_changes() {
+    return $this->changes;
+  }
+
 }
 
 //The function returns the no. of business days between two dates and it skips the holidays
@@ -389,4 +415,56 @@ function getWorkingDays($startDate,$endDate,$holidays = array()){
   }
 
   return $workingDays;
+}
+
+class Burndown {
+  public $start_date;
+  public $end_date;
+  public $duration;
+  public $time_changes = array(); // we index by date timestamp (at midnight)
+
+  public function __construct($start, $end) {
+    global $api;
+    $this->start_date = $start;
+    $this->end_date = $end;
+    $this->duration = date_diff($this->end_date, $this->start_date, 1)->d + 1;
+    // initialise the array values for all days
+    $start = clone $this->start_date;
+    for($i = 0; $i < $this->duration; $i++) {
+      $index = date_add($start, new DateInterval('P'.$i.'D'));
+      $this->time_changes[$index->getTimestamp()] = 0;
+      $start = clone $this->start_date;
+    }
+  }
+
+  public function add_time_change($date, $value) {
+    var_dump($date);
+    // check if the date is within the range
+    if($this->start_date > $date || $this->end_date < $date) {
+      echo 'wrong date';
+      return false;
+    }
+    // work done on day 1 affects time left on day 2, and so on
+    // we set 6am as our cut-off point
+
+    // create a new DateTime object with the same date
+    // but set the time to 6am
+    $cutoff = clone $date;
+    $cutoff->setTime(6, 0);
+    if($cutoff > $date) {
+      $date->sub(new DateInterval('P1D'));
+    }
+    $date->setTime(0, 0);
+    echo $date->format(DateTime::ISO8601);
+    echo "\n".$date->getTimestamp();
+    $this->time_changes[$date->getTimestamp()] += $value;
+  }
+
+  public function get_value($date) {
+    return $this->time_changes[$date];
+  }
+
+  public function dump() {
+    return $this->time_changes;
+  }
 }
