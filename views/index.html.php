@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="public/board.css" type="text/css" media="all" charset="utf-8">
     <link rel="stylesheet" href="public/tipsy/stylesheets/tipsy.css" type="text/css" media="all" charset="utf-8">
     <link rel="shortcut icon" href="public/i/favicon.png">
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
   </head>
   <body>
     <div id="navbar">
@@ -65,6 +66,24 @@
         </div>
       </div>
     </div>
+
+    <div id="chart_div" style="width: 900px; height: 500px;"></div>
+    <script type="text/javascript">
+      google.load("visualization", "1", {packages:["corechart"]});
+      google.setOnLoadCallback(drawChart);
+      function drawChart() {
+        var data = google.visualization.arrayToDataTable(
+          <?= json_encode($sprint->get_changes()->get_google_chart(array('Day', 'Expected', 'Current'))) ?>
+        );
+
+        var options = {
+          title: 'Burn Down Chart'
+        };
+
+        var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
+        chart.draw(data, options);
+      }
+    </script>
     <div id="overlay"></div>
     <script type="text/javascript" charset="utf-8">
       var update_url_base = "<?= url_for('/item'); ?>";
