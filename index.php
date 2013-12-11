@@ -20,7 +20,7 @@ dispatch('/show/:id', 'scrumboard');
       // $filters = array(array('key' => SPRINT_STATE_ID, 'values' => array('Active')));
       try {
         $sprints = $api->item->getItems(SPRINT_APP_ID, array(
-          'limit' => 5,
+          'limit' => 20,
           'sort_by' => 'created_on',
           'sort_desc' => 1
         ));
