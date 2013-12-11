@@ -430,8 +430,8 @@ class Burndown {
     global $api;
     $this->start_date = $start;
     $this->end_date = $end;
-    $this->duration = date_diff($this->end_date, $this->start_date, 1)->d + 1;
-    $this->today = date_diff(new DateTime(), $this->start_date, 1)->d;
+    $this->duration = date_diff($this->end_date, $this->start_date, 1)->d + 1; // number of days
+    $this->today = date_diff(new DateTime(), $this->start_date, 1)->d; // today's day number
     // initialise the array values for all days
     for($i = 0; $i < $this->duration; $i++) {
       $this->time_changes[$i] = 0;
@@ -466,18 +466,23 @@ class Burndown {
     // example of the format: https://google-developers.appspot.com/chart/interactive/docs/gallery/linechart
     $data = array();
     // $labels = array('Day', 'Expected', 'Current');
+    $date_label = clone $this->start_date;
     $data[] = $labels;
-    $data[] = array('Day 1', $this->estimate, $this->estimate);
+    $data[] = array('Day 1 ('.$date_label->format('d/m/Y').')', $this->estimate, $this->estimate);
     $done = 0;
+    $one_day = new DateInterval('P1D');
     for($x = 1; $x <= $this->duration; $x++) {
+      $date_label->add($one_day);
       $done += $this->time_changes[$x-1];
       $estimated_progress = $this->estimate - round(($this->estimate/$this->duration) * $x, 1);
+      $label = 'Day '.($x + 1).' ('.$date_label->format('d/m/Y').')';
+
       if($x === $this->today) {
         $data[] = array('Today', $estimated_progress, $this->estimate - $done);
       } else if($x > $this->today) {
-        $data[] = array('Day '. ($x + 1), $estimated_progress, null);
+        $data[] = array($label, $estimated_progress, null);
       } else {
-        $data[] = array('Day '. ($x + 1), $estimated_progress, $this->estimate - $done);
+        $data[] = array($label, $estimated_progress, $this->estimate - $done);
       }
     }
 
