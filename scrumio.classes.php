@@ -255,17 +255,31 @@ class ScrumioSprint {
 
         // we need to know the number of changes
         $number_changes = count($revisions);
-        // the first one is always the creation - we don't need it
         for($i = 1; $i < $number_changes; $i++) {
           // get the changes and check if the TIME LEFT field has changed
           $revision = $api->item->getRevisionDiff($item["item_id"] , ($i - 1), $i);
           $revision = $revision[0];
           if($revision["field_id"] == ITEM_TIMELEFT_ID) {
             // get the date and associate the change
-            // we need a burn down chart for a sprint.
-            // we don't care about anything else at this point
+            $change_date = new DateTime($revisions[$i]["created_on"], new DateTimeZone('Europe/London'));
+            echo $change_date->format('Y-m-d H:i:s');
             // here we get all the changes for each task
-            $this->changes->add_time_change(new DateTime($revisions[$i]["created_on"], new DateTimeZone('Europe/London')), ($revision["from"][0]["value"] - $revision["to"][0]["value"]));
+            $from = $to = null;
+            // edge case: if we're changing from null then ignore it
+            if(!$revision["from"]) {
+              continue;
+            } else {
+              $from = $revision["from"][0]["value"];
+            }
+
+            if(!$revision["to"]) {
+              $to = 0;
+            } else {
+              $to = $revision["to"][0]["value"];
+            }
+
+            // add changes to the register
+            $this->changes->add_time_change($change_date, ($from - $to));
           }
         }
       }
