@@ -262,7 +262,7 @@ class ScrumioSprint {
           if($revision["field_id"] == ITEM_TIMELEFT_ID) {
             // get the date and associate the change
             $change_date = new DateTime($revisions[$i]["created_on"], new DateTimeZone('Europe/London'));
-            echo $change_date->format('Y-m-d H:i:s');
+
             // here we get all the changes for each task
             $from = $to = null;
             // edge case: if we're changing from null then ignore it
@@ -442,7 +442,7 @@ class Burndown {
 
   public function __construct($start, $end) {
     global $api;
-    $this->start_date = $start;
+    $this->start_date = $start->setTime(0, 0); // this is necessary to calculate the days and intervals properly
     $this->end_date = $end;
     $this->duration = date_diff($this->end_date, $this->start_date, 1)->d + 1; // number of days
     $this->today = date_diff(new DateTime(), $this->start_date, 1)->d; // today's day number
