@@ -471,12 +471,13 @@ class Burndown {
     $done = 0;
     for($x = 1; $x <= $this->duration; $x++) {
       $done += $this->time_changes[$x-1];
+      $estimated_progress = $this->estimate - round(($this->estimate/$this->duration) * $x, 1);
       if($x === $this->today) {
-        $data[] = array('Today', $this->estimate - ($this->estimate/$this->duration) * $x, $this->estimate - $done);
+        $data[] = array('Today', $estimated_progress, $this->estimate - $done);
       } else if($x > $this->today) {
-        $data[] = array('Day '. ($x + 1), $this->estimate - ($this->estimate/$this->duration) * $x, null);
+        $data[] = array('Day '. ($x + 1), $estimated_progress, null);
       } else {
-        $data[] = array('Day '. ($x + 1), $this->estimate - ($this->estimate/$this->duration) * $x, $this->estimate - $done);
+        $data[] = array('Day '. ($x + 1), $estimated_progress, $this->estimate - $done);
       }
     }
 
