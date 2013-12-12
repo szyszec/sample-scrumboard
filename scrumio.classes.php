@@ -271,6 +271,14 @@ class ScrumioSprint {
               // edge case: if we're changing from null then ignore it
               if(!$revision["from"]) {
                 continue;
+              } else if($revision["from"][0]["value"] == 0) {
+                // edge case: we're changing from 0 (a finished task)
+                // this should only be used when the time_left hasn't been set initially
+                // TODO: to make it more robust we could check if the next change is equal
+                // to the estimate.
+                // OR if the time_left is changed from null to some value we should take
+                // estimate as the starting value instead
+                continue;
               } else {
                 $from = $revision["from"][0]["value"];
               }
