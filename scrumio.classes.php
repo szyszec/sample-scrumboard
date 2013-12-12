@@ -253,35 +253,39 @@ class ScrumioSprint {
         // get all the revisions for an item
         $revisions = $api->item->getRevisions($item["item_id"]);
 
-        // we need to know the number of changes
-        $number_changes = count($revisions);
-        for($i = 1; $i < $number_changes; $i++) {
-          // get the changes and check if the TIME LEFT field has changed
-          $revision = $api->item->getRevisionDiff($item["item_id"] , ($i - 1), $i);
-          $revision = $revision[0];
-          if($revision["field_id"] == ITEM_TIMELEFT_ID) {
-            // get the date and associate the change
-            $change_date = new DateTime($revisions[$i]["created_on"], new DateTimeZone('Europe/London'));
+        // we need to know the number of revisions
+        $number_revisions = count($revisions);
+        for($i = 1; $i < $number_revisions; $i++) {
+          // loop through the changes
+          $changes = $api->item->getRevisionDiff($item["item_id"] , ($i - 1), $i);
+          $changes_number = count($changes);
+          for($j = 0; $j < $changes_number; $j++) {
+            $revision = $changes[$j];
+            // check if the TIME LEFT field has changed
+            if($revision["field_id"] == ITEM_TIMELEFT_ID) {
+              // get the date and associate the change
+              $change_date = new DateTime($revisions[$i]["created_on"], new DateTimeZone('Europe/London'));
 
-            // here we get all the changes for each task
-            $from = $to = null;
-            // edge case: if we're changing from null then ignore it
-            if(!$revision["from"]) {
-              continue;
-            } else {
-              $from = $revision["from"][0]["value"];
+              // here we get all the changes for each task
+              $from = $to = null;
+              // edge case: if we're changing from null then ignore it
+              if(!$revision["from"]) {
+                continue;
+              } else {
+                $from = $revision["from"][0]["value"];
+              }
+
+              if(!$revision["to"]) {
+                $to = 0;
+              } else {
+                $to = $revision["to"][0]["value"];
+              }
+
+              // add changes to the register
+              $this->changes->add_time_change($change_date, ($from - $to));
             }
-
-            if(!$revision["to"]) {
-              $to = 0;
-            } else {
-              $to = $revision["to"][0]["value"];
-            }
-
-            // add changes to the register
-            $this->changes->add_time_change($change_date, ($from - $to));
-          }
-        }
+          } // end loop through all internal changes
+        } // end loop through all revisions
       }
 
       foreach ($stories['items'] as $story) {
